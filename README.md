@@ -65,10 +65,11 @@ This will start:
 
 ```
 my_robot_description/
+├── README.md
+├── .gitignore
 ├── setup.py
 ├── package.xml
 └── my_robot_description/
-    ├── README.md
     ├── launch/
     │   └── view_my_robot.launch.py          # Launch file for visualization
     └── robot_description/
