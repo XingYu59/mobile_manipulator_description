@@ -1,4 +1,5 @@
-# My Robot Description
+# mobile_manipulator_description
+
 
 A mixed robot combining a **Clearpath Husky A200** mobile base, a **Kinova Gen3** 6-DOF manipulator, and a **Robotiq 2F-85** gripper - designed for autonomous navigation and object grasping.
 
