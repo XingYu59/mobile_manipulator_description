@@ -42,7 +42,7 @@ Some of the required dependencies can be found in the following repositories. Pl
 Make sure you have all dependencies installed in your ROS 2 workspace, then build with colcon:
 
 ```bash
-cd ~/robocup_ws
+cd ~/your_ws
 source /opt/ros/humble/setup.bash
 colcon build --packages-select my_robot_description
 source install/setup.bash
