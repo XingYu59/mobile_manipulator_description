@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="my_robot">
+
+    <!-- Propagate xacro args to included files -->
+    <xacro:arg name="use_platform_controllers" default="false"/>
+    <xacro:arg name="sim_gazebo" default="false"/>
+    <xacro:arg name="sim_gazebo_sensors" default="false"/>
+
+    <!-- Import my_robot urdf file (contains kortex + robotiq ros2_control) -->
+    <xacro:include filename="$(find my_robot_description)/robot_description/my_robot_description.xacro" />
+
+    <!-- Note: ros2_control is already provided by kortex_description and robotiq_description macros.
+         Do NOT add another one here, or controller_manager will crash. -->
+
+</robot>

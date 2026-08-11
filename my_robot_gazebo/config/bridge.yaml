@@ -1,0 +1,49 @@
+# ros_gz_bridge 桥接配置(GZ -> ROS)
+# 由 sim.launch.py 通过 parameter_bridge --ros-args -p config_file:=本文件 加载
+# cmd_vel/odom/joint_states 由 ros2_control 直接发布为 ROS topic,无需在此桥接
+
+# 仿真时钟(gz_ros2_control 不发布 /clock,但所有 use_sim_time 节点都需要)
+- ros_topic_name: "/clock"
+  gz_topic_name: "/world/default/clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "ignition.msgs.Clock"
+  direction: GZ_TO_ROS
+
+# 2D LiDAR
+- ros_topic_name: "/scan"
+  gz_topic_name: "/front_laser/scan"
+  ros_type_name: "sensor_msgs/msg/LaserScan"
+  gz_type_name: "ignition.msgs.LaserScan"
+  direction: GZ_TO_ROS
+
+# IMU(Dingo imu_0_link,50Hz)
+- ros_topic_name: "/imu/data_raw"
+  gz_topic_name: "/imu/data_raw"
+  ros_type_name: "sensor_msgs/msg/Imu"
+  gz_type_name: "ignition.msgs.IMU"
+  direction: GZ_TO_ROS
+
+# 桅杆 RGBD 相机
+- ros_topic_name: "/camera/image_raw"
+  gz_topic_name: "/mast_camera/image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "ignition.msgs.Image"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/camera/depth/image_raw"
+  gz_topic_name: "/mast_camera/depth_image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "ignition.msgs.Image"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/camera/camera_info"
+  gz_topic_name: "/mast_camera/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "ignition.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/camera/depth/points"
+  gz_topic_name: "/mast_camera/points"
+  ros_type_name: "sensor_msgs/msg/PointCloud2"
+  gz_type_name: "ignition.msgs.PointCloudPacked"
+  direction: GZ_TO_ROS

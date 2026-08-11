@@ -1,0 +1,48 @@
+diff --git a/kortex_description/arms/gen3/7dof/urdf/kortex.ros2_control.xacro b/kortex_description/arms/gen3/7dof/urdf/kortex.ros2_control.xacro
+index 4053ba9..b14cefd 100644
+--- a/kortex_description/arms/gen3/7dof/urdf/kortex.ros2_control.xacro
++++ b/kortex_description/arms/gen3/7dof/urdf/kortex.ros2_control.xacro
+@@ -63,8 +63,8 @@
+       </hardware>
+       <joint name="${prefix}joint_1">
+         <command_interface name="position">
+-          <param name="min">{-2*pi}</param>
+-          <param name="max">{2*pi}</param>
++          <param name="min">${-2*pi}</param>
++          <param name="max">${2*pi}</param>
+         </command_interface>
+         <state_interface name="position">
+           <param name="initial_value">${initial_positions['joint_1']}</param>
+@@ -85,8 +85,8 @@
+       </joint>
+       <joint name="${prefix}joint_3">
+         <command_interface name="position">
+-          <param name="min">{-2*pi}</param>
+-          <param name="max">{2*pi}</param>
++          <param name="min">${-2*pi}</param>
++          <param name="max">${2*pi}</param>
+         </command_interface>
+         <state_interface name="position">
+           <param name="initial_value">${initial_positions['joint_3']}</param>
+@@ -107,8 +107,8 @@
+       </joint>
+       <joint name="${prefix}joint_5">
+         <command_interface name="position">
+-          <param name="min">{-2*pi}</param>
+-          <param name="max">{2*pi}</param>
++          <param name="min">${-2*pi}</param>
++          <param name="max">${2*pi}</param>
+         </command_interface>
+         <state_interface name="position">
+           <param name="initial_value">${initial_positions['joint_5']}</param>
+@@ -129,8 +129,8 @@
+       </joint>
+       <joint name="${prefix}joint_7">
+         <command_interface name="position">
+-          <param name="min">{-2*pi}</param>
+-          <param name="max">{2*pi}</param>
++          <param name="min">${-2*pi}</param>
++          <param name="max">${2*pi}</param>
+         </command_interface>
+         <state_interface name="position">
+           <param name="initial_value">${initial_positions['joint_7']}</param>

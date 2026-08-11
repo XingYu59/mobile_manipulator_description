@@ -1,0 +1,325 @@
+<?xml version="1.0"?>
+<robot name="my_robot" xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <!-- ==================== Simulation target ==================== -->
+    <!-- Fortress (sim_ignition) 是默认目标;sim_gazebo 仅作 Classic 回退 -->
+    <xacro:arg name="sim_gazebo" default="false"/>
+    <xacro:arg name="sim_ignition" default="true"/>
+    <xacro:arg name="sim_gazebo_sensors" default="false"/>  <!-- 遗留参数,Fortress 下不使用 -->
+    <xacro:arg name="use_platform_controllers" default="true"/>
+    <!-- 关键:is_sim:=true 让 Dingo 走 ign_ros2_control/IgnitionSystem,
+         并激活 clearpath 的 generic/gazebo.urdf.xacro(Fortress ros2_control 插件) -->
+    <xacro:arg name="is_sim" default="true"/>
+    <xacro:arg name="use_fake_hardware" default="false"/>
+
+    <!-- 关键:让 clearpath 的 generic gazebo 插件加载我们统一的控制器配置
+         (含底座 diff_drive + 机械臂 + 夹爪,单个 controller_manager) -->
+    <xacro:arg name="gazebo_controllers" default="$(find my_robot_gazebo)/config/gazebo_controllers.yaml"/>
+
+    <!-- ==================== Includes ==================== -->
+    <xacro:include filename="$(find clearpath_platform_description)/urdf/common.urdf.xacro" />
+    <xacro:include filename="$(find kortex_description)/robots/kortex_robot.xacro" />
+    <xacro:include filename="$(find clearpath_platform_description)/urdf/dd100/dd100.urdf.xacro" />
+    <xacro:include filename="$(find clearpath_platform_description)/urdf/dd100/attachments/top_plate.urdf.xacro" />
+    <xacro:include filename="$(find kortex_description)/grippers/robotiq_2f_85/urdf/robotiq_2f_85_macro.xacro" />
+
+    <!-- 自定义材质 -->
+    <material name="dark">
+        <color rgba="0.3 0.3 0.3 1.0"/>
+    </material>
+    <material name="red">
+        <color rgba="0.8 0.0 0.0 1.0"/>
+    </material>
+
+    <!-- ==================== Dingo 底盘 (dd100,差分驱动) ==================== -->
+    <xacro:dd100 wheel="default"/>
+
+    <!-- PACS 顶板:板面 z≈0.27,网格挂载点 top_plate_mount_<col><row> -->
+    <xacro:top_plate name="top_plate" model="pacs" parent_link="default_mount" height="0.2">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:top_plate>
+
+    <!-- ==================== 布局常量 ==================== -->
+    <!-- 顶板网格中央挂载点 c3(绝对 ~(0.08, 0, 0.27)),机械臂装在这里 -->
+    <xacro:property name="arm_mount" value="top_plate_mount_c3"/>
+    <xacro:property name="plate_top_z" value="0.27"/>
+    <!-- 桅杆:立于顶板前侧 y=0.2 偏移(防撞臂),相机高 ≈0.85 -->
+    <xacro:property name="mast_x" value="0.24"/>
+    <xacro:property name="mast_y" value="0.2"/>
+    <xacro:property name="mast_height" value="0.58"/>
+    <!-- LiDAR:底盘前部居中,扫描面抬至 ≈0.62m(高于折叠臂 ~0.59m,仍低于桌面 0.75m) -->
+    <xacro:property name="laser_x" value="0.30"/>
+    <xacro:property name="laser_z" value="0.58"/>
+
+    <!-- ==================== 桅杆 + 深度相机 (导航/检测) ==================== -->
+    <link name="mast_link">
+        <visual>
+            <origin xyz="0 0 ${mast_height/2}" rpy="0 0 0"/>
+            <geometry>
+                <cylinder length="${mast_height}" radius="0.02"/>
+            </geometry>
+            <material name="dark"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 ${mast_height/2}" rpy="0 0 0"/>
+            <geometry>
+                <cylinder length="${mast_height}" radius="0.02"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <origin xyz="0 0 ${mast_height/2}" rpy="0 0 0"/>
+            <mass value="0.5"/>
+            <inertia ixx="0.015" ixy="0.0" ixz="0.0" iyy="0.015" iyz="0.0" izz="0.0001"/>
+        </inertial>
+    </link>
+
+    <joint name="mast_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="mast_link"/>
+        <origin xyz="${mast_x} ${mast_y} ${plate_top_z}" rpy="0 0 0"/>
+    </joint>
+
+    <!-- 相机支架:连接桅杆顶与相机机身 -->
+    <link name="mast_camera_bracket_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.04 0.04 0.03"/>
+            </geometry>
+            <material name="dark"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.04 0.04 0.03"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.05"/>
+            <inertia ixx="1e-05" ixy="0.0" ixz="0.0" iyy="1e-05" iyz="0.0" izz="1e-05"/>
+        </inertial>
+    </link>
+
+    <joint name="mast_camera_bracket_joint" type="fixed">
+        <parent link="mast_link"/>
+        <child link="mast_camera_bracket_link"/>
+        <origin xyz="0 0 ${mast_height}" rpy="0 0 0"/>
+    </joint>
+
+    <!-- 深度相机机身:前向,略微下倾用于看地面 -->
+    <link name="mast_camera_link">
+        <visual>
+            <origin xyz="0.025 0 0" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.06 0.03 0.04"/>
+            </geometry>
+            <material name="red"/>
+        </visual>
+        <collision>
+            <origin xyz="0.025 0 0" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.06 0.03 0.04"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <origin xyz="0.025 0 0" rpy="0 0 0"/>
+            <mass value="0.1"/>
+            <inertia ixx="0.00005" ixy="0.0" ixz="0.0" iyy="0.00005" iyz="0.0" izz="0.00005"/>
+        </inertial>
+    </link>
+
+    <joint name="mast_camera_joint" type="fixed">
+        <parent link="mast_camera_bracket_link"/>
+        <child link="mast_camera_link"/>
+        <!-- 前倾 ~20°(0.35 rad)看地面 -->
+        <origin xyz="0 0 0" rpy="0 0.35 0"/>
+    </joint>
+
+    <!-- 光学坐标系(ROS 深度相机惯例) -->
+    <link name="mast_camera_depth_optical_frame" />
+
+    <joint name="mast_camera_depth_optical_frame_joint" type="fixed">
+        <parent link="mast_camera_link"/>
+        <child link="mast_camera_depth_optical_frame"/>
+        <origin xyz="0 0 0" rpy="-1.57 0 -1.57"/>
+    </joint>
+
+    <!-- ==================== 2D LiDAR (底盘前部,导航 SLAM) ==================== -->
+    <!-- 立柱:从 base_link 撑到 laser_z -->
+    <link name="front_laser_stand_link">
+        <visual>
+            <origin xyz="0 0 ${laser_z/2}" rpy="0 0 0"/>
+            <geometry>
+                <cylinder length="${laser_z}" radius="0.015"/>
+            </geometry>
+            <material name="dark"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 ${laser_z/2}" rpy="0 0 0"/>
+            <geometry>
+                <cylinder length="${laser_z}" radius="0.015"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <origin xyz="0 0 ${laser_z/2}" rpy="0 0 0"/>
+            <mass value="0.2"/>
+            <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+        </inertial>
+    </link>
+
+    <joint name="front_laser_stand_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="front_laser_stand_link"/>
+        <origin xyz="${laser_x} 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <!-- SICK LMS1xx 外形(简化盒体,避免依赖 clearpath_sensors_description 网格) -->
+    <link name="front_laser_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.1 0.1 0.08"/>
+            </geometry>
+            <material name="dark"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.1 0.1 0.08"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.2"/>
+            <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+        </inertial>
+    </link>
+
+    <link name="front_laser_laser"/>
+
+    <joint name="front_laser_joint" type="fixed">
+        <parent link="front_laser_stand_link"/>
+        <child link="front_laser_link"/>
+        <origin xyz="0 0 ${laser_z}" rpy="0 0 0"/>
+    </joint>
+
+    <joint name="front_laser_laser_joint" type="fixed">
+        <parent link="front_laser_link"/>
+        <child link="front_laser_laser"/>
+        <origin xyz="0.0549 0 0.0367" rpy="0 0 0"/>
+    </joint>
+
+    <!-- ==================== Kinova Gen3 机械臂 + Robotiq 夹爪 ==================== -->
+    <!-- 装在顶板中央挂载点;sim_ignition:=true → ign_ros2_control/IgnitionSystem,
+         与 Dingo 底座共用同一个 libign_ros2_control-system.so 插件 -->
+    <xacro:property name="initial_positions" value="${dict(joint_1=0.0, joint_2=0.0, joint_3=0.0, joint_4=0.0, joint_5=0.0, joint_6=0.0)}"/>
+    <xacro:load_robot
+        parent="${arm_mount}"
+        arm="gen3"
+        gripper="robotiq_2f_85"
+        gripper_joint_name="robotiq_85_left_knuckle_joint"
+        dof="6"
+        vision="true"
+        robot_ip="yyy.yyy.yyy.yyy"
+        username="admin"
+        password="admin"
+        port="10000"
+        port_realtime="10001"
+        session_inactivity_timeout_ms="60000"
+        connection_inactivity_timeout_ms="2000"
+        use_internal_bus_gripper_comm="false"
+        sim_gazebo="$(arg sim_gazebo)"
+        sim_ignition="$(arg sim_ignition)"
+        sim_isaac="false"
+        prefix="arm_"
+        use_fake_hardware="$(arg use_fake_hardware)"
+        initial_positions="${initial_positions}"
+        use_external_cable="false"
+        fake_sensor_commands="false"
+        gripper_com_port="">
+        <origin xyz="0 0 0" rpy="0 0 0" />
+    </xacro:load_robot>
+
+    <!-- ==================== Fortress 插件与传感器 ==================== -->
+    <!-- 注:IMU 通过 gz_ros2_control 传感器接口发布,需将 imu_0 的 <sensor> 状态接口
+         加入某个有 joint 的 ros2_control 块(见 clearpath dd100.urdf.xacro 的
+         dd100_hardware 块),本文件不再单独声明 ros2_control 块 -->
+    <!-- 注:ros2_control 由 clearpath generic/gazebo.urdf.xacro(经 dd100 + is_sim:=true)
+         注入的单个 libign_ros2_control-system.so 插件统一管理,这里不再重复添加,
+         只补 Sensors 系统插件(激活所有 <sensor>)与相机/LiDAR 传感器 -->
+    <xacro:if value="$(arg sim_ignition)">
+        <!-- 激活 Dingo IMU、桅杆相机、LiDAR 等所有 Fortress 传感器 -->
+        <gazebo>
+            <plugin filename="libignition-gazebo-sensors-system.so"
+                    name="ignition::gazebo::systems::Sensors"/>
+        </gazebo>
+
+        <!-- 桅杆 RGBD 深度相机 -->
+        <gazebo reference="mast_camera_link">
+            <sensor type="rgbd_camera" name="mast_camera">
+                <topic>/mast_camera</topic>
+                <always_on>1</always_on>
+                <update_rate>30</update_rate>
+                <visualize>false</visualize>
+                <ignition_frame_id>mast_camera_depth_optical_frame</ignition_frame_id>
+                <camera>
+                    <horizontal_fov>1.047</horizontal_fov>
+                    <image>
+                        <width>640</width>
+                        <height>480</height>
+                        <format>R8G8B8</format>
+                    </image>
+                    <clip>
+                        <near>0.1</near>
+                        <far>10</far>
+                    </clip>
+                </camera>
+            </sensor>
+        </gazebo>
+
+        <!-- IMU(Dingo 自带 imu 的 <topic> 未被 URDF->SDF 转换器处理,这里去掉 topic
+             让 gz 分配默认 topic,再由 bridge.yaml 按实际 topic 桥接) -->
+        <gazebo reference="imu_0_link">
+            <sensor type="imu" name="imu_0">
+                <always_on>1</always_on>
+                <update_rate>50</update_rate>
+                <visualize>false</visualize>
+                <ignition_frame_id>imu_0_link</ignition_frame_id>
+            </sensor>
+        </gazebo>
+
+        <!-- 2D LiDAR(gpu_lidar,270°,25m) -->
+        <gazebo reference="front_laser_laser">
+            <sensor type="gpu_lidar" name="front_laser">
+                <topic>/front_laser/scan</topic>
+                <always_on>1</always_on>
+                <update_rate>40</update_rate>
+                <visualize>false</visualize>
+                <ignition_frame_id>front_laser_laser</ignition_frame_id>
+                <lidar>
+                    <scan>
+                        <horizontal>
+                            <samples>720</samples>
+                            <resolution>1</resolution>
+                            <min_angle>-2.35619</min_angle>
+                            <max_angle>2.35619</max_angle>
+                        </horizontal>
+                        <vertical>
+                            <samples>1</samples>
+                            <resolution>1</resolution>
+                            <min_angle>0</min_angle>
+                            <max_angle>0</max_angle>
+                        </vertical>
+                    </scan>
+                    <range>
+                        <min>0.05</min>
+                        <max>25.0</max>
+                        <resolution>0.01</resolution>
+                    </range>
+                </lidar>
+            </sensor>
+        </gazebo>
+    </xacro:if>
+
+</robot>

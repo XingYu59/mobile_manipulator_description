@@ -1,0 +1,10 @@
+# Default initial positions for my_robot's ros2_control fake system
+
+initial_positions:
+  arm_joint_1: 0
+  arm_joint_2: 0
+  arm_joint_3: 0
+  arm_joint_4: 0
+  arm_joint_5: 0
+  arm_joint_6: 0
+  arm_robotiq_85_left_knuckle_joint: 0

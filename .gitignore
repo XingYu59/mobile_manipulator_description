@@ -20,3 +20,20 @@ Thumbs.db
 
 # Backup files
 *.bak
+*.orig
+
+# --- 第三方 vendored 依赖 ---
+# 用 deps.repos + `vcs import` 复现,不纳入本仓库
+clearpath_common/
+gazebo_ros2_control/
+gz_ros2_control/
+picknik_controllers/
+ros2_kortex/
+ros2_robotiq_gripper/
+ros_gz/
+serial/
+turtlebot3-2.3.7/
+yolo_ros
+
+# --- 工具 ---
+.claude/

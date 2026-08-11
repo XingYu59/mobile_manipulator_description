@@ -1,0 +1,46 @@
+# 工作区第三方依赖清单 —— vcs import 复现用
+#   用法: vcs import < deps.repos   (在 src/ 目录下)
+#   说明: 涉及 Fortress(ign_ros2_control)时需同时套用 patches/apply_patches.sh
+#   注意: turtlebot3-2.3.7 本地是手动解压的发布包,此处按其上游 tag 记录。
+
+repositories:
+  clearpath_common:
+    type: git
+    url: https://github.com/clearpathrobotics/clearpath_common
+    version: humble
+  gazebo_ros2_control:
+    type: git
+    url: https://github.com/ros-simulation/gazebo_ros2_control.git
+    version: humble
+  gz_ros2_control:
+    type: git
+    url: https://github.com/ros-controls/gz_ros2_control.git
+    version: humble
+  picknik_controllers:
+    type: git
+    url: https://github.com/picknikrobotics/picknik_controllers.git
+    version: humble
+  ros2_kortex:
+    type: git
+    url: https://github.com/Kinovarobotics/ros2_kortex.git
+    version: humble
+  ros2_robotiq_gripper:
+    type: git
+    url: https://github.com/aalmrad/ros2_robotiq_gripper.git
+    version: main
+  ros_gz:
+    type: git
+    url: https://github.com/gazebosim/ros_gz.git
+    version: humble
+  serial:
+    type: git
+    url: https://github.com/tylerjw/serial.git
+    version: ros2
+  turtlebot3-2.3.7:
+    type: git
+    url: https://github.com/ROBOTIS-GIT/turtlebot3.git
+    version: 2.3.7
+  yolo_ros:
+    type: git
+    url: https://github.com/mgonzs13/yolo_ros.git
+    version: main
