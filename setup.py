@@ -11,7 +11,6 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch', [
-            'my_robot_description/launch/view_my_robot.xml',
             'my_robot_description/launch/view_my_robot.launch.py',
         ]),
         ('share/' + package_name + '/robot_description', ['my_robot_description/robot_description/my_robot_description.xacro']),
