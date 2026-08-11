@@ -1,33 +1,35 @@
-# mobile_manipulator_description
+# my_robot_description
 
 
-A mixed robot combining a **Clearpath Husky A200** mobile base, a **Kinova Gen3** 6-DOF manipulator, and a **Robotiq 2F-85** gripper - designed for autonomous navigation and object grasping.
+A robot description package for a **Clearpath Dingo dd100** differential base combined with a **Kinova Gen3** 6-DOF manipulator and a **Robotiq 2F-85** gripper — designed for autonomous navigation and object grasping.
 
 ## Robot Components
 
 | Component | Description |
 |---|---|
-| **Mobile Base** | Clearpath Husky A200 - skid-steer wheeled platform |
-| **Manipulator** | Kinova Gen3 - 6-DOF collaborative robot arm |
-| **Gripper** | Robotiq 2F-85 - two-finger adaptive gripper |
-| **Depth Camera** | Mast-mounted depth camera at the front, tilted ~20° downward for ground visibility |
-| **Top Plate** | Standard A200 top plate for mounting the arm |
+| **Mobile Base** | Clearpath Dingo dd100 — differential-drive platform (2 front wheels + rear caster) |
+| **Manipulator** | Kinova Gen3 — 6-DOF collaborative robot arm |
+| **Gripper** | Robotiq 2F-85 — two-finger adaptive gripper |
+| **Depth Camera** | Mast-mounted depth camera at the front, tilted down for ground visibility |
+| **LiDAR** | 2D laser scanner at the front of the base |
+| **Top Plate** | PACS top plate (surface z ≈ 0.27 m) carrying the arm and mast |
 
 ## Architecture
 
 The robot consists of:
 
-- **Husky A200 base** (`base_link`) - provides mobility
-- **Top Plate** - mounted on `default_mount`, serves as the arm mounting surface
-- **Mast & Camera** - a 0.6m mast at the front (`x=0.38m`), with a depth camera facing forward and tilted ~20° down for navigation and object detection
-- **Kinova Gen3 Arm** - mounted on the top plate, positioned behind the mast; workspace extends forward past the robot front edge for grasping
-- **Robotiq 2F-85 Gripper** - attached to the arm's tool flange
+- **Dingo dd100 base** (`base_link`) - provides differential-drive mobility
+- **PACS Top Plate** - mounted on `default_mount`, surface at z ≈ 0.27 m; the arm mounts on grid point `top_plate_mount_c3`
+- **Mast & Camera** - a 0.58 m mast at the front (x = 0.24, y = 0.2 m) with a depth camera facing forward and tilted down for navigation and object detection
+- **LiDAR** - front of the base (x = 0.30, z = 0.58 m), scanning above the folded arm for navigation
+- **Kinova Gen3 Arm** - mounted on the top plate; workspace extends forward past the robot front edge for grasping
+- **Robotiq 2F-85 Gripper** - attached to the arm's tool flange, actuated by `arm_robotiq_85_left_knuckle_joint`
 
 ## Dependencies
 
 This package depends on the following ROS 2 packages:
 
-- `clearpath_platform_description` - Husky A200 URDF definitions
+- `clearpath_platform_description` - Dingo dd100 URDF definitions
 - `kortex_description` - Kinova Gen3 arm URDF and macros
 - `joint_state_publisher_gui` - for visualizing and controlling joint states
 - `robot_state_publisher` - for publishing TF transforms
@@ -75,3 +77,4 @@ my_robot_description/
     │   └── view_my_robot.launch.py          # Launch file for visualization
     └── robot_description/
         └── my_robot_description.xacro        # Main robot Xacro description
+```

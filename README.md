@@ -1,77 +1,95 @@
 # mobile_manipulator_description
 
 
-A mixed robot combining a **Clearpath Husky A200** mobile base, a **Kinova Gen3** 6-DOF manipulator, and a **Robotiq 2F-85** gripper - designed for autonomous navigation and object grasping.
+A ROS 2 workspace (monorepo) for a mixed mobile manipulator combining a **Clearpath Dingo dd100** differential base, a **Kinova Gen3** 6-DOF manipulator, and a **Robotiq 2F-85** gripper — with Gazebo Fortress simulation and MoveIt 2 grasping support, designed for autonomous navigation and object grasping.
+
+## Packages
+
+| Package | Purpose |
+|---|---|
+| `my_robot_description` | Robot model (URDF/Xacro): Dingo dd100 base + Gen3 arm + 2F-85 gripper + mast camera + LiDAR |
+| `my_robot_gazebo` | Gazebo Fortress (Gazebo Sim 6) simulation: launch, ros2_control controllers, ros_gz bridge |
+| `my_robot_moveit_config` | MoveIt 2 configuration for motion planning and grasping |
 
 ## Robot Components
 
 | Component | Description |
 |---|---|
-| **Mobile Base** | Clearpath Husky A200 - skid-steer wheeled platform |
-| **Manipulator** | Kinova Gen3 - 6-DOF collaborative robot arm |
-| **Gripper** | Robotiq 2F-85 - two-finger adaptive gripper |
-| **Depth Camera** | Mast-mounted depth camera at the front, tilted ~20° downward for ground visibility |
-| **Top Plate** | Standard A200 top plate for mounting the arm |
+| **Mobile Base** | Clearpath Dingo dd100 — differential-drive platform (2 front wheels + rear caster) |
+| **Manipulator** | Kinova Gen3 — 6-DOF collaborative robot arm |
+| **Gripper** | Robotiq 2F-85 — two-finger adaptive gripper |
+| **Depth Camera** | Mast-mounted depth camera at the front, tilted down for ground visibility |
+| **LiDAR** | 2D laser scanner at the front of the base |
+| **Top Plate** | PACS top plate (surface z ≈ 0.27 m) carrying the arm and mast |
 
 ## Architecture
 
-The robot consists of:
-
-- **Husky A200 base** (`base_link`) - provides mobility
-- **Top Plate** - mounted on `default_mount`, serves as the arm mounting surface
-- **Mast & Camera** - a 0.6m mast at the front (`x=0.38m`), with a depth camera facing forward and tilted ~20° down for navigation and object detection
-- **Kinova Gen3 Arm** - mounted on the top plate, positioned behind the mast; workspace extends forward past the robot front edge for grasping
-- **Robotiq 2F-85 Gripper** - attached to the arm's tool flange
+- **Dingo dd100 base** (`base_link`) - provides differential-drive mobility; `/cmd_vel`, `/odom` and `/joint_states` are published by the platform controller
+- **PACS Top Plate** - mounted on `default_mount`, surface at z ≈ 0.27 m; the arm mounts on grid point `top_plate_mount_c3`
+- **Mast & Camera** - a 0.58 m mast at the front (x = 0.24, y = 0.2 m) with a depth camera facing forward and tilted down for navigation and object detection
+- **LiDAR** - front of the base (x = 0.30, z = 0.58 m), scanning above the folded arm for navigation
+- **Kinova Gen3 Arm** - mounted on the top plate; workspace extends forward past the robot front edge for grasping
+- **Robotiq 2F-85 Gripper** - attached to the arm's tool flange, actuated by `arm_robotiq_85_left_knuckle_joint`
 
 ## Dependencies
 
-This package depends on the following ROS 2 packages:
+The workspace vendors the third-party ROS 2 packages that the three packages depend on. After cloning this repo, import them with `vcs` and apply the local patches:
 
-- `clearpath_platform_description` - Husky A200 URDF definitions
-- `kortex_description` - Kinova Gen3 arm URDF and macros
-- `joint_state_publisher_gui` - for visualizing and controlling joint states
-- `robot_state_publisher` - for publishing TF transforms
-- `rviz2` - for 3D visualization
+```bash
+cd ~/your_ws
+git clone https://github.com/XingYu59/mobile_manipulator_description.git src
+cd src
+vcs import < deps.repos
+./patches/apply_patches.sh
+```
 
-Some of the required dependencies can be found in the following repositories. Please clone them into your workspace and follow their respective setup instructions:
+Third-party packages (see `deps.repos` for exact URLs and versions):
 
-- `ros2_kortex` - https://github.com/Kinovarobotics/ros2_kortex
-- `clearpath_common` - https://github.com/clearpathrobotics/clearpath_common
+- `clearpath_common` - Dingo dd100 URDF and platform definitions
+- `ros2_kortex` - Kinova Gen3 arm URDF and macros
+- `gz_ros2_control` - ros2_control plugin for Gazebo Fortress
+- `ros_gz` - Gazebo Fortress bridge and simulation tools
+- `ros2_robotiq_gripper`, `picknik_controllers`, `serial`, etc.
+
+> **Patches**: the workspace relies on 4 local fixes to third-party packages
+> (kortex xacro variable evaluation, clearpath dd100 IMU and topic remapping).
+> They are archived under `patches/` and are **required** for the simulation to
+> work — re-apply them with `./patches/apply_patches.sh` after any re-import or
+> upgrade of the third-party packages.
 
 ## Building
 
-Make sure you have all dependencies installed in your ROS 2 workspace, then build with colcon:
+Make sure all dependencies are installed in your ROS 2 workspace, then build with colcon:
 
 ```bash
 cd ~/your_ws
 source /opt/ros/humble/setup.bash
-colcon build --packages-select my_robot_description
+colcon build
 source install/setup.bash
 ```
 
 ## Launch
 
-To view the robot in RViz with joint control GUI:
+Simulation with MoveIt and RViz:
 
 ```bash
-ros2 launch my_robot_description view_my_robot.launch.py
+ros2 launch my_robot_gazebo sim.launch.py
 ```
 
-This will start:
-- `robot_state_publisher` - publishes the robot model and TF frames
-- `joint_state_publisher_gui` - interactive GUI to control robot joints
-- `rviz2` - 3D visualization of the robot
+Headless (no GUI, for testing):
+
+```bash
+ros2 launch my_robot_gazebo sim.launch.py headless:=true launch_rviz:=false
+```
 
 ## File Structure
 
 ```
-my_robot_description/
+src/
 ├── README.md
-├── .gitignore
-├── setup.py
-├── package.xml
-└── my_robot_description/
-    ├── launch/
-    │   └── view_my_robot.launch.py          # Launch file for visualization
-    └── robot_description/
-        └── my_robot_description.xacro        # Main robot Xacro description
+├── deps.repos                 # vcs import manifest for third-party dependencies
+├── patches/                   # local fixes to third-party packages + apply script
+├── my_robot_description/      # robot model (URDF/Xacro)
+├── my_robot_gazebo/           # Gazebo Fortress simulation
+└── my_robot_moveit_config/    # MoveIt 2 configuration
+```
